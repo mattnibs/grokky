@@ -1,4 +1,4 @@
-module github.com/logrusorgru/grokky
+module github.com/mattnibs/grokky
 
 go 1.20
 
