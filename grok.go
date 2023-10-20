@@ -39,6 +39,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -170,6 +171,10 @@ func (h Host) compileExternal(expr string) (*Pattern, error) {
 	}
 	p := &Pattern{Regexp: r}
 	p.s = msi
+	p.order = make(map[int]string)
+	for k, v := range msi {
+		p.order[v] = k
+	}
 	return p, nil
 }
 
@@ -190,7 +195,9 @@ func (h Host) Compile(expr string) (*Pattern, error) {
 // Feel free to use the Pattern as regexp.Regexp.
 type Pattern struct {
 	*regexp.Regexp
-	s map[string]int
+	s     map[string]int
+	order map[int]string
+	cache []string
 }
 
 // Parse returns map (name->match) on input. The map can be empty.
@@ -206,12 +213,30 @@ func (p *Pattern) Parse(input string) map[string]string {
 	return r
 }
 
+func (p *Pattern) ParseValues(input string) []string {
+	a := p.FindStringSubmatchIndex(input)
+	if a == nil {
+		return nil
+	}
+	p.cache = p.cache[:0]
+	for i := 0; len(p.cache) < len(p.s); i++ {
+		if _, ok := p.order[i]; !ok {
+			continue
+		}
+		p.cache = append(p.cache, input[a[i*2]:a[i*2+1]])
+	}
+	return p.cache
+}
+
 // Names returns all names that this pattern has
 func (p *Pattern) Names() (ss []string) {
 	ss = make([]string, 0, len(p.s))
 	for k := range p.s {
 		ss = append(ss, k)
 	}
+	sort.Slice(ss, func(i, j int) bool {
+		return p.s[ss[i]] < p.s[ss[j]]
+	})
 	return
 }
 

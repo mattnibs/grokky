@@ -532,5 +532,40 @@ func Benchmark_parse_vs_findStringSubmatch(b *testing.B) {
 		}
 		b.ReportAllocs()
 	})
+}
 
+func Benchmark_parse_vs_findStringSubmatch_v2(b *testing.B) {
+	b.StopTimer()
+	h := NewBase()
+	p, err := h.Compile("%{TIMESTAMP_ISO8601:event_time} %{LOGLEVEL:log_level} %{GREEDYDATA:log_message}")
+	if err != nil {
+		b.Fatal(err)
+	}
+	line := "2020-09-16T04:20:42.45+01:00 DEBUG This is a sample debug log message"
+	var mvals map[string]string
+	var vals []string
+	b.Run("map", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if mvals = p.Parse(line); len(mvals) != 3 {
+				b.Fatal("shot input")
+			}
+		}
+		b.ReportAllocs()
+	})
+	b.Run("substring-match", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if vals = p.FindStringSubmatch(line); len(vals) != 13 {
+				b.Fatal("shot input")
+			}
+		}
+		b.ReportAllocs()
+	})
+	b.Run("parse-values", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			if vals = p.ParseValues(line); len(vals) != 3 {
+				b.Fatal("shot input", len(vals))
+			}
+		}
+		b.ReportAllocs()
+	})
 }

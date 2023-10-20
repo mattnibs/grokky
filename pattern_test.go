@@ -135,9 +135,20 @@ func TestPattern_Names(t *testing.T) {
 	if len(ss) != 4 {
 		t.Error("Names returns wrong values count")
 	}
-	for _, v := range ss {
-		if !(v == "one" || v == "two" || v == "zero" || v == "three") {
-			t.Error("Names returns wrong values:", v)
-		}
+	if ss[0] != "zero" && ss[1] != "three" && ss[2] != "one" && ss[3] != "two" {
+		t.Error("bad result")
+	}
+}
+
+func TestPattern_ParseValues(t *testing.T) {
+	b := NewBase()
+	p, err := b.Compile("%{TIMESTAMP_ISO8601:event_time} %{LOGLEVEL:log_level} %{GREEDYDATA:log_message}")
+	terr(t, err)
+	ss := p.ParseValues("2020-09-16T04:20:42.45+01:00 DEBUG This is a sample debug log message")
+	if len(ss) != 3 {
+		t.Errorf("expected 3 values, got %d", len(ss))
+	}
+	if ss[0] != "2020-09-16T04:20:42.45+01:00" && ss[1] != "DEBUG" && ss[2] != "This is a sample debug log message" {
+		t.Error("bad result")
 	}
 }
